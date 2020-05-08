@@ -1,0 +1,12 @@
+-- -----------------------------------------------------
+-- Table `srt-db`.`equipment`
+-- -----------------------------------------------------
+
+CONSTRAINT `unique_item_serial` UNIQUE(`equipment_item_id`, `serial_no`) COMMENT 'One equipment item may have many serial'
+
+
+-- -----------------------------------------------------
+-- Table `srt-db`.`approval_process_lookup`
+-- -----------------------------------------------------
+CONSTRAINT unique_doctype_version UNIQUE(`document_type_id`, `version_number`) COMMENT 'Should have lookup only on each document type and version'
+
