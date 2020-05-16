@@ -28,6 +28,19 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
+-- Table `srt-db`.`uom_group`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`uom_group` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`uom_group` (
+  `uom_group_id` INT NOT NULL,
+  `name` VARCHAR(45) NOT NULL,
+  `description` VARCHAR(45) NULL,
+  PRIMARY KEY (`uom_group_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
 -- Table `srt-db`.`item`
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `srt-db`.`item` ;
@@ -36,16 +49,36 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`item` (
   `id` INT NOT NULL,
   `description` NVARCHAR(255) NULL,
   `item_group_id` INT NOT NULL,
-  `active` BIT(1) NULL,
+  `active` BIT(1) NOT NULL,
+  `remark` NVARCHAR(4096) NULL,
+  `uom_group_id` INT NOT NULL,
   PRIMARY KEY (`id`),
   INDEX `fk_item_item_group_idx` (`item_group_id` ASC) VISIBLE,
+  INDEX `fk_item_uom_group1_idx` (`uom_group_id` ASC) VISIBLE,
   CONSTRAINT `fk_item_item_group`
     FOREIGN KEY (`item_group_id`)
     REFERENCES `srt-db`.`item_group` (`id`)
     ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_item_uom_group1`
+    FOREIGN KEY (`uom_group_id`)
+    REFERENCES `srt-db`.`uom_group` (`uom_group_id`)
+    ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
 COMMENT = 'Add \"superseded_by\" & \"is_active\" column to indicate if the item is still being used';
+
+
+-- -----------------------------------------------------
+-- Table `srt-db`.`warehouse_type`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`warehouse_type` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`warehouse_type` (
+  `warehouse_type_id` INT NOT NULL,
+  `type` NVARCHAR(255) NOT NULL,
+  PRIMARY KEY (`warehouse_type_id`))
+ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
@@ -54,10 +87,18 @@ COMMENT = 'Add \"superseded_by\" & \"is_active\" column to indicate if the item 
 DROP TABLE IF EXISTS `srt-db`.`warehouse` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`warehouse` (
-  `id` INT NOT NULL,
-  `name` NVARCHAR(45) NULL,
+  `warehouse_id` INT NOT NULL,
+  `name` NVARCHAR(255) NOT NULL,
   `location` VARCHAR(45) NULL,
-  PRIMARY KEY (`id`))
+  `warehouse_type_id` INT NOT NULL,
+  `use_central` INT NOT NULL,
+  PRIMARY KEY (`warehouse_id`),
+  INDEX `fk_warehouse_warehouse_type1_idx` (`warehouse_type_id` ASC) VISIBLE,
+  CONSTRAINT `fk_warehouse_warehouse_type1`
+    FOREIGN KEY (`warehouse_type_id`)
+    REFERENCES `srt-db`.`warehouse_type` (`warehouse_type_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
@@ -67,9 +108,9 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`gender` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`gender` (
-  `id` INT NOT NULL,
-  `gender` VARCHAR(45) NULL,
-  PRIMARY KEY (`id`))
+  `gender_id` INT NOT NULL AUTO_INCREMENT,
+  `gender` NVARCHAR(45) NOT NULL,
+  PRIMARY KEY (`gender_id`))
 ENGINE = InnoDB;
 
 
@@ -79,10 +120,10 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`title` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`title` (
-  `id` INT NOT NULL,
-  `prefix_en` VARCHAR(45) NULL,
-  `prefix_th` NVARCHAR(45) NULL,
-  PRIMARY KEY (`id`))
+  `title_id` INT NOT NULL,
+  `prefix_en` VARCHAR(45) NOT NULL,
+  `prefix_th` NVARCHAR(45) NOT NULL,
+  PRIMARY KEY (`title_id`))
 ENGINE = InnoDB;
 
 
@@ -92,9 +133,10 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`level` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`level` (
-  `id` INT NOT NULL,
-  `level` NVARCHAR(255) NULL,
-  PRIMARY KEY (`id`))
+  `level_id` INT NOT NULL,
+  `level` NVARCHAR(255) NOT NULL,
+  `description` NVARCHAR(255) NULL,
+  PRIMARY KEY (`level_id`))
 ENGINE = InnoDB;
 
 
@@ -104,7 +146,7 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`user` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`user` (
-  `id` INT NOT NULL,
+  `user_id` INT NOT NULL,
   `employee_id` VARCHAR(45) NOT NULL,
   `username` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL,
@@ -116,15 +158,15 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`user` (
   `lastname_th` NVARCHAR(255) NULL,
   `address` VARCHAR(255) NULL,
   `birthdate` DATE NULL,
-  `phone` VARCHAR(10) NULL,
+  `phone` VARCHAR(15) NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `is_approved` BIT(1) NULL,
   `active` BIT(1) NULL,
   `gender_id` INT NULL,
   `title_id` INT NULL,
-  `level_id` INT NOT NULL,
-  PRIMARY KEY (`id`),
+  `level_id` INT NULL,
+  PRIMARY KEY (`user_id`),
   UNIQUE INDEX `username_UNIQUE` (`username` ASC) VISIBLE,
   UNIQUE INDEX `email_UNIQUE` (`email` ASC) VISIBLE,
   UNIQUE INDEX `employee_id_UNIQUE` (`employee_id` ASC) VISIBLE,
@@ -133,17 +175,17 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`user` (
   INDEX `fk_user_level1_idx` (`level_id` ASC) VISIBLE,
   CONSTRAINT `fk_user_gender1`
     FOREIGN KEY (`gender_id`)
-    REFERENCES `srt-db`.`gender` (`id`)
+    REFERENCES `srt-db`.`gender` (`gender_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_user_title1`
     FOREIGN KEY (`title_id`)
-    REFERENCES `srt-db`.`title` (`id`)
+    REFERENCES `srt-db`.`title` (`title_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_user_level1`
     FOREIGN KEY (`level_id`)
-    REFERENCES `srt-db`.`level` (`id`)
+    REFERENCES `srt-db`.`level` (`level_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -207,9 +249,9 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`position_group` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`position_group` (
-  `id` INT NOT NULL,
-  `name` NVARCHAR(45) NULL,
-  PRIMARY KEY (`id`))
+  `position_group_id` INT NOT NULL,
+  `name` NVARCHAR(45) NOT NULL,
+  PRIMARY KEY (`position_group_id`))
 ENGINE = InnoDB;
 
 
@@ -219,15 +261,22 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`position` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`position` (
-  `id` INT NOT NULL,
-  `name` NVARCHAR(45) NULL,
+  `position_id` INT NOT NULL,
+  `name` NVARCHAR(255) NOT NULL,
   `abbreviation` NVARCHAR(45) NULL,
-  `position_group_id` INT NOT NULL,
-  PRIMARY KEY (`id`),
+  `position_group_id` INT NULL,
+  `warehouse_id` INT NULL,
+  PRIMARY KEY (`position_id`),
   INDEX `fk_position_position_group1_idx` (`position_group_id` ASC) VISIBLE,
+  INDEX `fk_position_warehouse1_idx` (`warehouse_id` ASC) VISIBLE,
   CONSTRAINT `fk_position_position_group1`
     FOREIGN KEY (`position_group_id`)
-    REFERENCES `srt-db`.`position_group` (`id`)
+    REFERENCES `srt-db`.`position_group` (`position_group_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_position_warehouse1`
+    FOREIGN KEY (`warehouse_id`)
+    REFERENCES `srt-db`.`warehouse` (`warehouse_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -255,13 +304,13 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`position_has_function` (
   `position_id` INT NOT NULL,
   `function_id` INT NOT NULL,
   PRIMARY KEY (`position_id`, `function_id`),
-  INDEX `fk_asot_table_functions_idx` (`function_id` ASC) VISIBLE,
-  CONSTRAINT `fk_asot_table_organization_hierarchy`
+  INDEX `fk_asot_table_functions1_idx` (`function_id` ASC) VISIBLE,
+  CONSTRAINT `fk_asot_table_organization_hierarchy1`
     FOREIGN KEY (`position_id`)
-    REFERENCES `srt-db`.`position` (`id`)
+    REFERENCES `srt-db`.`position` (`position_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_asot_table_function`
+  CONSTRAINT `fk_asot_table_functions`
     FOREIGN KEY (`function_id`)
     REFERENCES `srt-db`.`function` (`id`)
     ON DELETE NO ACTION
@@ -288,7 +337,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`user_include_function` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_user_include_function_user1`
     FOREIGN KEY (`user_id`)
-    REFERENCES `srt-db`.`user` (`id`)
+    REFERENCES `srt-db`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
@@ -334,16 +383,50 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
+-- Table `srt-db`.`document_type_group`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`document_type_group` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`document_type_group` (
+  `document_type_group_id` INT NOT NULL,
+  `name` NVARCHAR(4096) NOT NULL,
+  `description` NVARCHAR(4096) NULL,
+  PRIMARY KEY (`document_type_group_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
 -- Table `srt-db`.`document_type`
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `srt-db`.`document_type` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`document_type` (
-  `id` INT NOT NULL,
-  `name` NVARCHAR(45) NOT NULL,
+  `document_type_id` INT NOT NULL,
+  `name` NVARCHAR(255) NOT NULL,
   `description` NVARCHAR(4096) NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE INDEX `name_UNIQUE` (`name` ASC) VISIBLE)
+  `document_type_group_id` INT NOT NULL,
+  `from_warehouse_type_id` INT NOT NULL,
+  `to_warehouse_type_id` INT NOT NULL,
+  PRIMARY KEY (`document_type_id`),
+  UNIQUE INDEX `name_UNIQUE` (`name` ASC) VISIBLE,
+  INDEX `fk_document_type_warehouse_type1_idx` (`from_warehouse_type_id` ASC) VISIBLE,
+  INDEX `fk_document_type_warehouse_type2_idx` (`to_warehouse_type_id` ASC) VISIBLE,
+  INDEX `fk_document_type_document_type_group1_idx` (`document_type_group_id` ASC) VISIBLE,
+  CONSTRAINT `fk_document_type_warehouse_type1`
+    FOREIGN KEY (`from_warehouse_type_id`)
+    REFERENCES `srt-db`.`warehouse_type` (`warehouse_type_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_document_type_warehouse_type2`
+    FOREIGN KEY (`to_warehouse_type_id`)
+    REFERENCES `srt-db`.`warehouse_type` (`warehouse_type_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_document_type_document_type_group1`
+    FOREIGN KEY (`document_type_group_id`)
+    REFERENCES `srt-db`.`document_type_group` (`document_type_group_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
@@ -360,43 +443,62 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
+-- Table `srt-db`.`document_action_type`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`document_action_type` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`document_action_type` (
+  `document_action_type_id` INT NOT NULL,
+  `action` VARCHAR(45) NOT NULL,
+  PRIMARY KEY (`document_action_type_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
 -- Table `srt-db`.`document`
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `srt-db`.`document` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`document` (
-  `document_id` INT NOT NULL,
+  `document_id` INT NOT NULL AUTO_INCREMENT,
   `document_type_id` INT NOT NULL,
   `internal_document_id` NVARCHAR(45) NOT NULL,
   `created_on` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `remark` NVARCHAR(4096) NULL,
   `created_by_admin_id` INT NOT NULL,
   `created_by_user_id` INT NOT NULL,
-  `document_status_document_status_id` INT NOT NULL,
+  `document_status_id` INT NOT NULL,
+  `document_action_type_id` INT NOT NULL,
   PRIMARY KEY (`document_id`),
   INDEX `fk_document_document_type1_idx` (`document_type_id` ASC) VISIBLE,
   UNIQUE INDEX `internal_document_id_UNIQUE` (`internal_document_id` ASC) INVISIBLE,
   INDEX `fk_document_user1_idx` (`created_by_user_id` ASC) VISIBLE,
-  INDEX `fk_document_document_status1_idx` (`document_status_document_status_id` ASC) INVISIBLE,
+  INDEX `fk_document_document_status1_idx` (`document_status_id` ASC) INVISIBLE,
   INDEX `fk_document_user2_idx` (`created_by_admin_id` ASC) VISIBLE,
+  INDEX `fk_document_document_action_type1_idx` (`document_action_type_id` ASC) VISIBLE,
   CONSTRAINT `fk_document_document_type1`
     FOREIGN KEY (`document_type_id`)
-    REFERENCES `srt-db`.`document_type` (`id`)
+    REFERENCES `srt-db`.`document_type` (`document_type_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_document_user1`
     FOREIGN KEY (`created_by_user_id`)
-    REFERENCES `srt-db`.`user` (`id`)
+    REFERENCES `srt-db`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_document_document_status1`
-    FOREIGN KEY (`document_status_document_status_id`)
+    FOREIGN KEY (`document_status_id`)
     REFERENCES `srt-db`.`document_status` (`document_status_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_document_user2`
     FOREIGN KEY (`created_by_admin_id`)
-    REFERENCES `srt-db`.`user` (`id`)
+    REFERENCES `srt-db`.`user` (`user_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_document_document_action_type1`
+    FOREIGN KEY (`document_action_type_id`)
+    REFERENCES `srt-db`.`document_action_type` (`document_action_type_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -417,12 +519,12 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`icd` (
   INDEX `fk_icd_document1_idx` (`document_id` ASC) VISIBLE,
   CONSTRAINT `fk_document_identifier_warehouse1`
     FOREIGN KEY (`dest_warehouse_id`)
-    REFERENCES `srt-db`.`warehouse` (`id`)
+    REFERENCES `srt-db`.`warehouse` (`warehouse_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_document_identifier_warehouse2`
     FOREIGN KEY (`src_warehouse_id`)
-    REFERENCES `srt-db`.`warehouse` (`id`)
+    REFERENCES `srt-db`.`warehouse` (`warehouse_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_icd_document1`
@@ -460,19 +562,10 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`approval_process_lookup` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`approval_process_lookup` (
-  `id` INT NOT NULL,
-  `document_type_id` INT NOT NULL,
-  `version_number` VARCHAR(45) NOT NULL,
+  `approval_process_lookup_id` INT NOT NULL,
   `created_on` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `description` NVARCHAR(4096) NULL,
-  INDEX `fk_table1_document_type1_idx` (`document_type_id` ASC) VISIBLE,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_table1_document_type1`
-    FOREIGN KEY (`document_type_id`)
-    REFERENCES `srt-db`.`document_type` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT unique_doctype_version UNIQUE(`document_type_id`, `version_number`) COMMENT 'Should have lookup only on each document type and version')
+  PRIMARY KEY (`approval_process_lookup_id`))
 ENGINE = InnoDB;
 
 
@@ -482,7 +575,7 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`approval_process` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`approval_process` (
-  `id` INT NOT NULL,
+  `id` INT NOT NULL AUTO_INCREMENT,
   `created_on` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` DATETIME NULL,
   `document_id` INT NOT NULL,
@@ -497,7 +590,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`approval_process` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_approval_process_approval_process_lookup1`
     FOREIGN KEY (`approval_process_lookup_id`)
-    REFERENCES `srt-db`.`approval_process_lookup` (`id`)
+    REFERENCES `srt-db`.`approval_process_lookup` (`approval_process_lookup_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -509,11 +602,10 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`approval_step` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`approval_step` (
-  `id` INT NOT NULL,
   `approval_process_id` INT NOT NULL,
   `step_number` INT NOT NULL,
-  `step_last_number` INT NOT NULL,
-  PRIMARY KEY (`id`),
+  `is_skipped` BIT(1) NOT NULL,
+  PRIMARY KEY (`approval_process_id`, `step_number`),
   INDEX `fk_approval_step_approval_process1_idx` (`approval_process_id` ASC) VISIBLE,
   CONSTRAINT `fk_approval_step_approval_process1`
     FOREIGN KEY (`approval_process_id`)
@@ -529,10 +621,10 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`approval_status` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`approval_status` (
-  `id` INT NOT NULL,
+  `approval_status_id` INT NOT NULL,
   `name` NVARCHAR(45) NOT NULL,
   `description` NVARCHAR(4096) NULL,
-  PRIMARY KEY (`id`))
+  PRIMARY KEY (`approval_status_id`))
 ENGINE = InnoDB;
 
 
@@ -549,29 +641,30 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`approval_by` (
   `position_group_id` INT NOT NULL,
   `approved_on` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `remark` VARCHAR(4096) NULL,
-  INDEX `fk_approval_by_approval_step1_idx` (`approval_step_id` ASC) VISIBLE,
+  `approval_step_approval_process_id` INT NOT NULL,
   PRIMARY KEY (`id`),
   INDEX `fk_approval_by_approval_status1_idx` (`approval_status_id` ASC) VISIBLE,
   INDEX `fk_approval_by_user1_idx` (`user_id` ASC) VISIBLE,
   INDEX `fk_approval_by_position_group1_idx` (`position_group_id` ASC) VISIBLE,
-  CONSTRAINT `fk_approval_by_approval_step1`
-    FOREIGN KEY (`approval_step_id`)
-    REFERENCES `srt-db`.`approval_step` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+  INDEX `fk_approval_by_approval_step1_idx` (`approval_step_approval_process_id` ASC, `approval_step_id` ASC) VISIBLE,
   CONSTRAINT `fk_approval_by_approval_status1`
     FOREIGN KEY (`approval_status_id`)
-    REFERENCES `srt-db`.`approval_status` (`id`)
+    REFERENCES `srt-db`.`approval_status` (`approval_status_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_approval_by_user1`
     FOREIGN KEY (`user_id`)
-    REFERENCES `srt-db`.`user` (`id`)
+    REFERENCES `srt-db`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_approval_by_position_group1`
     FOREIGN KEY (`position_group_id`)
-    REFERENCES `srt-db`.`position_group` (`id`)
+    REFERENCES `srt-db`.`position_group` (`position_group_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_approval_by_approval_step1`
+    FOREIGN KEY (`approval_step_approval_process_id` , `approval_step_id`)
+    REFERENCES `srt-db`.`approval_step` (`approval_process_id` , `step_number`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -602,15 +695,8 @@ DROP TABLE IF EXISTS `srt-db`.`goods_receipt_po` ;
 CREATE TABLE IF NOT EXISTS `srt-db`.`goods_receipt_po` (
   `document_id` INT NOT NULL,
   `po_id` NVARCHAR(45) NULL COMMENT 'ID of the purchase order document',
-  `user_receive_id` INT NOT NULL COMMENT 'Individual which take the good into the system',
-  INDEX `fk_goods_receipt_po_user1_idx` (`user_receive_id` ASC) VISIBLE,
   PRIMARY KEY (`document_id`),
   INDEX `fk_goods_receipt_po_1_icd1_idx` (`document_id` ASC) VISIBLE,
-  CONSTRAINT `fk_goods_receipt_po_user10`
-    FOREIGN KEY (`user_receive_id`)
-    REFERENCES `srt-db`.`user` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
   CONSTRAINT `fk_goods_receipt_po_1_icd1`
     FOREIGN KEY (`document_id`)
     REFERENCES `srt-db`.`icd` (`document_id`)
@@ -618,19 +704,6 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`goods_receipt_po` (
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
 COMMENT = 'This table is intended to document goods ordered (Purchased Order) into the system.\n\nGrainularity: 1 row = 1 Goods receipt which have multiple item type\nNOTE: Currently it is assumed that 1 goods receipt = ';
-
-
--- -----------------------------------------------------
--- Table `srt-db`.`uom_group`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `srt-db`.`uom_group` ;
-
-CREATE TABLE IF NOT EXISTS `srt-db`.`uom_group` (
-  `uom_group_id` INT NOT NULL,
-  `name` VARCHAR(45) NOT NULL,
-  `description` VARCHAR(45) NULL,
-  PRIMARY KEY (`uom_group_id`))
-ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
@@ -644,6 +717,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`uom` (
   `description` VARCHAR(45) NULL,
   `abbreviation` VARCHAR(45) NULL,
   `uom_group_id` INT NOT NULL,
+  `is_default` BIT(1) NULL,
   PRIMARY KEY (`uom_code`),
   INDEX `fk_uom_uom_group1_idx` (`uom_group_id` ASC) VISIBLE,
   CONSTRAINT `fk_uom_uom_group1`
@@ -673,13 +747,13 @@ DROP TABLE IF EXISTS `srt-db`.`icd_line_item` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`icd_line_item` (
   `document_id` INT NOT NULL,
-  `id` INT NOT NULL,
+  `line_number` INT NOT NULL,
   `quantity` INT NOT NULL,
   `uom_id` INT NOT NULL,
   `per_unit_price` DECIMAL(19,4) NOT NULL,
   `item_id` INT NOT NULL,
   `item_status_id` INT NOT NULL,
-  PRIMARY KEY (`document_id`, `id`),
+  PRIMARY KEY (`document_id`, `line_number`),
   INDEX `fk_has_item_unit_of_measurement1_idx` (`uom_id` ASC) VISIBLE,
   INDEX `fk_has_item_item1_idx` (`item_id` ASC) VISIBLE,
   INDEX `fk_icd_line_item_icd1_idx` (`document_id` ASC) VISIBLE,
@@ -740,12 +814,12 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`authority_transfer` (
   INDEX `fk_temporary_authority_transfer_user2_idx` (`dest_user_id` ASC) VISIBLE,
   CONSTRAINT `fk_temporary_authority_transfer_user1`
     FOREIGN KEY (`src_user_id`)
-    REFERENCES `srt-db`.`user` (`id`)
+    REFERENCES `srt-db`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_temporary_authority_transfer_user2`
     FOREIGN KEY (`dest_user_id`)
-    REFERENCES `srt-db`.`user` (`id`)
+    REFERENCES `srt-db`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -776,15 +850,8 @@ DROP TABLE IF EXISTS `srt-db`.`goods_receipt_fix` ;
 CREATE TABLE IF NOT EXISTS `srt-db`.`goods_receipt_fix` (
   `document_id` INT NOT NULL,
   `fix_date` DATE NULL,
-  `user_fix_id` INT NOT NULL,
-  INDEX `fk_goods_receipt_fix_user1_idx` (`user_fix_id` ASC) VISIBLE,
   PRIMARY KEY (`document_id`),
   INDEX `fk_goods_receipt_fix_1_icd1_idx` (`document_id` ASC) VISIBLE,
-  CONSTRAINT `fk_goods_receipt_fix_user10`
-    FOREIGN KEY (`user_fix_id`)
-    REFERENCES `srt-db`.`user` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
   CONSTRAINT `fk_goods_receipt_fix_1_icd1`
     FOREIGN KEY (`document_id`)
     REFERENCES `srt-db`.`icd` (`document_id`)
@@ -816,17 +883,60 @@ DROP TABLE IF EXISTS `srt-db`.`goods_issue` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`goods_issue` (
   `document_id` INT NOT NULL,
-  `user_issue_id` INT NOT NULL,
-  INDEX `fk_goods_issue_user1_idx` (`user_issue_id` ASC) VISIBLE,
   PRIMARY KEY (`document_id`),
-  CONSTRAINT `fk_goods_issue_user10`
-    FOREIGN KEY (`user_issue_id`)
-    REFERENCES `srt-db`.`user` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
   CONSTRAINT `fk_goods_issue_icd1`
     FOREIGN KEY (`document_id`)
     REFERENCES `srt-db`.`icd` (`document_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `srt-db`.`division`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`division` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`division` (
+  `division_id` INT NOT NULL AUTO_INCREMENT,
+  `name` NVARCHAR(255) NOT NULL,
+  PRIMARY KEY (`division_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `srt-db`.`district`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`district` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`district` (
+  `district_id` INT NOT NULL COMMENT 'ระดับแขวง',
+  `name` NVARCHAR(255) NOT NULL,
+  `division_id` INT NOT NULL,
+  PRIMARY KEY (`district_id`),
+  INDEX `fk_location_district_location_division1_idx` (`division_id` ASC) VISIBLE,
+  CONSTRAINT `fk_location_district_location_division1`
+    FOREIGN KEY (`division_id`)
+    REFERENCES `srt-db`.`division` (`division_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `srt-db`.`node`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`node` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`node` (
+  `node_id` INT NOT NULL COMMENT 'ระดับตอน',
+  `name` NVARCHAR(255) NOT NULL,
+  `district_id` INT NOT NULL,
+  PRIMARY KEY (`node_id`),
+  INDEX `fk_location_node_location_district1_idx` (`district_id` ASC) VISIBLE,
+  CONSTRAINT `fk_location_node_location_district1`
+    FOREIGN KEY (`district_id`)
+    REFERENCES `srt-db`.`district` (`district_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -840,18 +950,18 @@ DROP TABLE IF EXISTS `srt-db`.`goods_fix` ;
 CREATE TABLE IF NOT EXISTS `srt-db`.`goods_fix` (
   `document_id` INT NOT NULL,
   `fix_date` DATE NULL,
-  `user_fix_id` INT NOT NULL,
+  `location_node_id` INT NOT NULL,
   PRIMARY KEY (`document_id`),
-  INDEX `fk_goods_fix_user1_idx` (`user_fix_id` ASC) VISIBLE,
   INDEX `fk_goods_fix_icd1_idx` (`document_id` ASC) VISIBLE,
-  CONSTRAINT `fk_goods_fix_user10`
-    FOREIGN KEY (`user_fix_id`)
-    REFERENCES `srt-db`.`user` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+  INDEX `fk_goods_fix_location_node1_idx` (`location_node_id` ASC) VISIBLE,
   CONSTRAINT `fk_goods_fix_icd1`
     FOREIGN KEY (`document_id`)
     REFERENCES `srt-db`.`icd` (`document_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_goods_fix_location_node1`
+    FOREIGN KEY (`location_node_id`)
+    REFERENCES `srt-db`.`node` (`node_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -887,12 +997,12 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`user_has_position` (
   INDEX `fk_user_has_position_user1_idx` (`user_id` ASC) VISIBLE,
   CONSTRAINT `fk_user_has_position_user1`
     FOREIGN KEY (`user_id`)
-    REFERENCES `srt-db`.`user` (`id`)
+    REFERENCES `srt-db`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_user_has_position_position1`
     FOREIGN KEY (`position_id`)
-    REFERENCES `srt-db`.`position` (`id`)
+    REFERENCES `srt-db`.`position` (`position_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -904,71 +1014,40 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`position_hierarchy` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`position_hierarchy` (
-  `ancestor` INT NOT NULL,
-  `decendant` INT NOT NULL,
-  `path_length` INT NULL,
-  `is_root` BIT(1) NULL,
-  PRIMARY KEY (`ancestor`, `decendant`),
-  INDEX `fk_position_has_position_position2_idx` (`decendant` ASC) VISIBLE,
-  INDEX `fk_position_has_position_position1_idx` (`ancestor` ASC) VISIBLE,
+  `ancestor_id` INT NOT NULL,
+  `decendant_id` INT NOT NULL,
+  `path_length` INT NOT NULL,
+  `is_root` BIT(1) NOT NULL,
+  PRIMARY KEY (`ancestor_id`, `decendant_id`),
+  INDEX `fk_position_has_position_position2_idx` (`decendant_id` ASC) VISIBLE,
+  INDEX `fk_position_has_position_position1_idx` (`ancestor_id` ASC) VISIBLE,
   CONSTRAINT `fk_position_has_position_position1`
-    FOREIGN KEY (`ancestor`)
-    REFERENCES `srt-db`.`position` (`id`)
+    FOREIGN KEY (`ancestor_id`)
+    REFERENCES `srt-db`.`position` (`position_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_position_has_position_position2`
-    FOREIGN KEY (`decendant`)
-    REFERENCES `srt-db`.`position` (`id`)
+    FOREIGN KEY (`decendant_id`)
+    REFERENCES `srt-db`.`position` (`position_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `srt-db`.`location_district`
+-- Table `srt-db`.`station`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `srt-db`.`location_district` ;
+DROP TABLE IF EXISTS `srt-db`.`station` ;
 
-CREATE TABLE IF NOT EXISTS `srt-db`.`location_district` (
-  `location_dist_id` INT NOT NULL COMMENT 'ระดับแขวง',
-  `location_dist_name` VARCHAR(45) NULL,
-  PRIMARY KEY (`location_dist_id`))
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `srt-db`.`location_node`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `srt-db`.`location_node` ;
-
-CREATE TABLE IF NOT EXISTS `srt-db`.`location_node` (
-  `location_node_id` INT NOT NULL COMMENT 'ระดับตอน',
-  `location_district_id` INT NOT NULL,
-  `location_node_name` VARCHAR(45) NULL,
-  PRIMARY KEY (`location_node_id`),
-  INDEX `fk_location_node_location_district1_idx` (`location_district_id` ASC) VISIBLE,
-  CONSTRAINT `fk_location_node_location_district1`
-    FOREIGN KEY (`location_district_id`)
-    REFERENCES `srt-db`.`location_district` (`location_dist_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `srt-db`.`location_station`
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `srt-db`.`location_station` ;
-
-CREATE TABLE IF NOT EXISTS `srt-db`.`location_station` (
-  `location_station_id` INT NOT NULL COMMENT 'ระดับสถานี',
-  `location_node_id` INT NOT NULL,
-  `location_station_name` VARCHAR(45) NULL,
-  PRIMARY KEY (`location_station_id`),
-  INDEX `fk_location_station_location_node1_idx` (`location_node_id` ASC) VISIBLE,
+CREATE TABLE IF NOT EXISTS `srt-db`.`station` (
+  `station_id` INT NOT NULL COMMENT 'ระดับสถานี',
+  `name` NVARCHAR(255) NOT NULL,
+  `node_id` INT NOT NULL,
+  PRIMARY KEY (`station_id`),
+  INDEX `fk_location_station_location_node1_idx` (`node_id` ASC) VISIBLE,
   CONSTRAINT `fk_location_station_location_node1`
-    FOREIGN KEY (`location_node_id`)
-    REFERENCES `srt-db`.`location_node` (`location_node_id`)
+    FOREIGN KEY (`node_id`)
+    REFERENCES `srt-db`.`node` (`node_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -1043,7 +1122,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`equipment` (
   INDEX `fk_equipment_fa_status1_idx` (`equipment_status_id` ASC) VISIBLE,
   CONSTRAINT `fk_fixed_asset_location_station1`
     FOREIGN KEY (`location_station_id`)
-    REFERENCES `srt-db`.`location_station` (`location_station_id`)
+    REFERENCES `srt-db`.`station` (`station_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_fixed_asset_item_fixed_asset1`
@@ -1055,8 +1134,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`equipment` (
     FOREIGN KEY (`equipment_status_id`)
     REFERENCES `srt-db`.`equipment_status` (`equipment_status_id`)
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `unique_item_serial` UNIQUE(`equipment_item_id`, `serial_no`) COMMENT 'One equipment item may have many serial')
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
 
@@ -1079,7 +1157,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`work_request` (
   INDEX `fk_work_request_document1_idx` (`document_id` ASC) VISIBLE,
   CONSTRAINT `fk_work_request_location_node1`
     FOREIGN KEY (`location_node_id`)
-    REFERENCES `srt-db`.`location_node` (`location_node_id`)
+    REFERENCES `srt-db`.`node` (`node_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_work_request_document1`
@@ -1291,7 +1369,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`ss101` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_wo_ss101_location_node1`
     FOREIGN KEY (`location_node_id`)
-    REFERENCES `srt-db`.`location_node` (`location_node_id`)
+    REFERENCES `srt-db`.`node` (`node_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_wo_ss101_recv_accident_from1`
@@ -1301,7 +1379,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`ss101` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_ss101_location_station1`
     FOREIGN KEY (`location_station_id`)
-    REFERENCES `srt-db`.`location_station` (`location_station_id`)
+    REFERENCES `srt-db`.`station` (`station_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -1393,12 +1471,12 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`icd_line_item_reference` (
   INDEX `fk_icd_line_item_has_icd_line_item_icd_line_item1_idx` (`document_id` ASC, `icd_line_item_id` ASC) VISIBLE,
   CONSTRAINT `fk_icd_line_item_has_icd_line_item_icd_line_item1`
     FOREIGN KEY (`document_id` , `icd_line_item_id`)
-    REFERENCES `srt-db`.`icd_line_item` (`document_id` , `id`)
+    REFERENCES `srt-db`.`icd_line_item` (`document_id` , `line_number`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_icd_line_item_has_icd_line_item_icd_line_item2`
     FOREIGN KEY (`refers_to_document_id` , `refers_to_icd_line_item_id`)
-    REFERENCES `srt-db`.`icd_line_item` (`document_id` , `id`)
+    REFERENCES `srt-db`.`icd_line_item` (`document_id` , `line_number`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -1430,7 +1508,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`item_inventory` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_item_inventory_warehouse1`
     FOREIGN KEY (`warehouse_id`)
-    REFERENCES `srt-db`.`warehouse` (`id`)
+    REFERENCES `srt-db`.`warehouse` (`warehouse_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_item_inventory_item_status1`
@@ -1492,7 +1570,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`physical_count_line_item` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_physical_count_line_item_warehouse1`
     FOREIGN KEY (`warehouse_id`)
-    REFERENCES `srt-db`.`warehouse` (`id`)
+    REFERENCES `srt-db`.`warehouse` (`warehouse_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -1504,10 +1582,10 @@ ENGINE = InnoDB;
 DROP TABLE IF EXISTS `srt-db`.`inventory_adjustment` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`inventory_adjustment` (
-  `document_document_id` INT NOT NULL,
-  PRIMARY KEY (`document_document_id`),
+  `document_id` INT NOT NULL,
+  PRIMARY KEY (`document_id`),
   CONSTRAINT `fk_inventory_adjustment_document1`
-    FOREIGN KEY (`document_document_id`)
+    FOREIGN KEY (`document_id`)
     REFERENCES `srt-db`.`document` (`document_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
@@ -1524,21 +1602,21 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`inventory_adjustment_line_item` (
   `document_id` INT NOT NULL,
   `adjustment_datetime` DATETIME NULL,
   `unit_count` DECIMAL(9,4) NULL,
-  `item_status_item_status_id` INT NOT NULL,
+  `item_status_id` INT NOT NULL,
   `item_id` INT NOT NULL,
   `warehouse_id` INT NOT NULL,
   PRIMARY KEY (`id`, `document_id`),
   INDEX `fk_inventory_adjustment_line_item_inventory_adjustment1_idx` (`document_id` ASC) VISIBLE,
-  INDEX `fk_inventory_adjustment_line_item_item_status1_idx` (`item_status_item_status_id` ASC) VISIBLE,
+  INDEX `fk_inventory_adjustment_line_item_item_status1_idx` (`item_status_id` ASC) VISIBLE,
   INDEX `fk_inventory_adjustment_line_item_item1_idx` (`item_id` ASC) VISIBLE,
   INDEX `fk_inventory_adjustment_line_item_warehouse1_idx` (`warehouse_id` ASC) VISIBLE,
   CONSTRAINT `fk_inventory_adjustment_line_item_inventory_adjustment1`
     FOREIGN KEY (`document_id`)
-    REFERENCES `srt-db`.`inventory_adjustment` (`document_document_id`)
+    REFERENCES `srt-db`.`inventory_adjustment` (`document_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_inventory_adjustment_line_item_item_status1`
-    FOREIGN KEY (`item_status_item_status_id`)
+    FOREIGN KEY (`item_status_id`)
     REFERENCES `srt-db`.`item_status` (`item_status_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
@@ -1549,7 +1627,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`inventory_adjustment_line_item` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_inventory_adjustment_line_item_warehouse1`
     FOREIGN KEY (`warehouse_id`)
-    REFERENCES `srt-db`.`warehouse` (`id`)
+    REFERENCES `srt-db`.`warehouse` (`warehouse_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -1563,7 +1641,7 @@ DROP TABLE IF EXISTS `srt-db`.`item_inventory_journal` ;
 CREATE TABLE IF NOT EXISTS `srt-db`.`item_inventory_journal` (
   `item_inventory_journal_id` INT NOT NULL,
   `document_id` INT NOT NULL,
-  `icd_line_item_id` INT NOT NULL,
+  `icd_line_number` INT NOT NULL,
   `item_id` INT NOT NULL,
   `warehouse_id` INT NOT NULL,
   `item_status_id` INT NOT NULL,
@@ -1574,13 +1652,13 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`item_inventory_journal` (
   `created_on` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `change_unit_count` DECIMAL(9,4) NOT NULL,
   PRIMARY KEY (`item_inventory_journal_id`),
-  INDEX `fk_item_inventory_journal_icd_line_item1_idx` (`document_id` ASC, `icd_line_item_id` ASC) VISIBLE,
+  INDEX `fk_item_inventory_journal_icd_line_item1_idx` (`document_id` ASC, `icd_line_number` ASC) VISIBLE,
   INDEX `fk_item_inventory_journal_item_inventory1_idx` (`item_id` ASC, `warehouse_id` ASC, `item_status_id` ASC) VISIBLE,
   INDEX `fk_item_inventory_journal_physical_count_line_item1_idx` (`physical_count_line_item_id` ASC, `physical_count_document_id` ASC) VISIBLE,
   INDEX `fk_item_inventory_journal_inventory_adjustment_line_item1_idx` (`inventory_adjustment_line_item_id` ASC, `inventory_adjustment_document_id` ASC) VISIBLE,
   CONSTRAINT `fk_item_inventory_journal_icd_line_item1`
-    FOREIGN KEY (`document_id` , `icd_line_item_id`)
-    REFERENCES `srt-db`.`icd_line_item` (`document_id` , `id`)
+    FOREIGN KEY (`document_id` , `icd_line_number`)
+    REFERENCES `srt-db`.`icd_line_item` (`document_id` , `line_number`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_item_inventory_journal_item_inventory1`
@@ -1874,7 +1952,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`node_has_checklist_custom_group` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_district_has_maintenance_group_location_node1`
     FOREIGN KEY (`location_node_id`)
-    REFERENCES `srt-db`.`location_node` (`location_node_id`)
+    REFERENCES `srt-db`.`node` (`node_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -1907,7 +1985,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`work_order_pm` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_wo_maintenance_plan_location_node1`
     FOREIGN KEY (`location_node_id`)
-    REFERENCES `srt-db`.`location_node` (`location_node_id`)
+    REFERENCES `srt-db`.`node` (`node_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -1934,7 +2012,7 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`equipment_installation` (
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_fa_installation_location_station1`
     FOREIGN KEY (`location_station_id`)
-    REFERENCES `srt-db`.`location_station` (`location_station_id`)
+    REFERENCES `srt-db`.`station` (`station_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_fa_installation_equipment1`
@@ -1969,7 +2047,6 @@ DROP TABLE IF EXISTS `srt-db`.`notification` ;
 CREATE TABLE IF NOT EXISTS `srt-db`.`notification` (
   `notification_id` INT NOT NULL,
   `user_id_recipient` INT NOT NULL,
-  `user_id_sender` INT NOT NULL,
   `is_read` BIT(1) NOT NULL,
   `document_type_id` INT NOT NULL,
   `document_id` INT NOT NULL,
@@ -1977,22 +2054,16 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`notification` (
   `url` VARCHAR(45) NULL,
   PRIMARY KEY (`notification_id`, `user_id_recipient`),
   INDEX `fk_notification_user2_idx` (`user_id_recipient` ASC) VISIBLE,
-  INDEX `fk_notification_user3_idx` (`user_id_sender` ASC) VISIBLE,
   INDEX `fk_notification_document_type1_idx` (`document_type_id` ASC) VISIBLE,
   INDEX `fk_notification_document1_idx` (`document_id` ASC) VISIBLE,
   CONSTRAINT `fk_notification_user2`
     FOREIGN KEY (`user_id_recipient`)
-    REFERENCES `srt-db`.`user` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_notification_user3`
-    FOREIGN KEY (`user_id_sender`)
-    REFERENCES `srt-db`.`user` (`id`)
+    REFERENCES `srt-db`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_notification_document_type1`
     FOREIGN KEY (`document_type_id`)
-    REFERENCES `srt-db`.`document_type` (`id`)
+    REFERENCES `srt-db`.`document_type` (`document_type_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_notification_document1`
@@ -2063,28 +2134,56 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
+-- Table `srt-db`.`approval_step_action`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`approval_step_action` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`approval_step_action` (
+  `approval_step_action_id` INT NOT NULL,
+  `action` NVARCHAR(255) NOT NULL,
+  PRIMARY KEY (`approval_step_action_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
 -- Table `srt-db`.`approval_step_lookup`
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `srt-db`.`approval_step_lookup` ;
 
 CREATE TABLE IF NOT EXISTS `srt-db`.`approval_step_lookup` (
-  `id` INT NOT NULL,
   `approval_process_lookup_id` INT NOT NULL,
   `step_number` INT NOT NULL,
   `step_last_number` INT NOT NULL,
   `position_group_id` INT NOT NULL,
+  `approval_step_action_id` INT NOT NULL,
+  `is_destination` BIT(1) NOT NULL,
+  `escalated_approval_process_lookup_id` INT NOT NULL,
+  `skippable_same_previous_position_group` BIT(1) NOT NULL,
+  `skippable_same_between_position_group` BIT(1) NOT NULL,
   `description` NVARCHAR(4096) NULL,
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`approval_process_lookup_id`, `step_number`),
   INDEX `fk_approval_step_lookup_approval_process_lookup1_idx` (`approval_process_lookup_id` ASC) VISIBLE,
   INDEX `fk_approval_step_lookup_position_group1_idx` (`position_group_id` ASC) VISIBLE,
+  INDEX `fk_approval_step_lookup_approval_step_action1_idx` (`approval_step_action_id` ASC) VISIBLE,
+  INDEX `fk_approval_step_lookup_approval_process_lookup2_idx` (`escalated_approval_process_lookup_id` ASC) VISIBLE,
   CONSTRAINT `fk_approval_step_lookup_approval_process_lookup1`
     FOREIGN KEY (`approval_process_lookup_id`)
-    REFERENCES `srt-db`.`approval_process_lookup` (`id`)
+    REFERENCES `srt-db`.`approval_process_lookup` (`approval_process_lookup_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_approval_step_lookup_position_group1`
     FOREIGN KEY (`position_group_id`)
-    REFERENCES `srt-db`.`position_group` (`id`)
+    REFERENCES `srt-db`.`position_group` (`position_group_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_approval_step_lookup_approval_step_action1`
+    FOREIGN KEY (`approval_step_action_id`)
+    REFERENCES `srt-db`.`approval_step_action` (`approval_step_action_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_approval_step_lookup_approval_process_lookup2`
+    FOREIGN KEY (`escalated_approval_process_lookup_id`)
+    REFERENCES `srt-db`.`approval_process_lookup` (`approval_process_lookup_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -2106,6 +2205,58 @@ CREATE TABLE IF NOT EXISTS `srt-db`.`goods_maintenance_line_item` (
   CONSTRAINT `fk_table1_fa_maintenance1`
     FOREIGN KEY (`document_id`)
     REFERENCES `srt-db`.`goods_maintenance` (`document_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `srt-db`.`goods_usage`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`goods_usage` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`goods_usage` (
+  `document_id` INT NOT NULL,
+  PRIMARY KEY (`document_id`),
+  CONSTRAINT `fk_goods_usage_icd1`
+    FOREIGN KEY (`document_id`)
+    REFERENCES `srt-db`.`icd` (`document_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `srt-db`.`document_type_approval_process_lookup`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `srt-db`.`document_type_approval_process_lookup` ;
+
+CREATE TABLE IF NOT EXISTS `srt-db`.`document_type_approval_process_lookup` (
+  `document_type_id` INT NOT NULL,
+  `document_action_type_id` INT NOT NULL,
+  `version_number` INT NOT NULL,
+  `approval_process_lookup_id` INT NOT NULL,
+  `start_on` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `end_on` DATETIME NULL,
+  `active` BIT(1) NOT NULL,
+  `remark` NVARCHAR(4096) NULL,
+  PRIMARY KEY (`document_type_id`, `document_action_type_id`, `version_number`),
+  INDEX `fk_document_type_has_approval_process_lookup_approval_proce_idx` (`approval_process_lookup_id` ASC) VISIBLE,
+  INDEX `fk_document_type_has_approval_process_lookup_document_type1_idx` (`document_type_id` ASC) VISIBLE,
+  INDEX `fk_document_type_approval_process_lookup_document_action_ty_idx` (`document_action_type_id` ASC) VISIBLE,
+  CONSTRAINT `fk_document_type_has_approval_process_lookup_document_type1`
+    FOREIGN KEY (`document_type_id`)
+    REFERENCES `srt-db`.`document_type` (`document_type_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_document_type_has_approval_process_lookup_approval_process1`
+    FOREIGN KEY (`approval_process_lookup_id`)
+    REFERENCES `srt-db`.`approval_process_lookup` (`approval_process_lookup_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_document_type_approval_process_lookup_document_action_type1`
+    FOREIGN KEY (`document_action_type_id`)
+    REFERENCES `srt-db`.`document_action_type` (`document_action_type_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;

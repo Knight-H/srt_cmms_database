@@ -1,0 +1,17 @@
+docker pull mysql
+
+docker run -d -it --name=srt-mysql -e MYSQL_ROOT_PASSWORD=srt-mysql -e MYSQL_DATABASE=srt-mysql -v /home/thanapapas/srt_cmms_database:/workdir -w /workdir -p 3333:3306 mysql
+
+From MySQL Workbench
+=====================
+Standard TCP/IP over SSH
+
+SSH Hostname: 43.229.79.36:22
+SSH Username: thanapapas
+SSH Password: .....
+SSH Key File (only if use keys)
+
+MySQL Hostname: 127.0.0.1
+MySQL Server Port: 3333 (or any port you exposed)
+Username: root
+Password: srt-mysql
