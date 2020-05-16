@@ -1,0 +1,8 @@
+Changelog
+=========
+- Changed `approval_step` to have composite key of `approval_process_id` and `step_number` to reflect the `approval_step_lookup` entity
+- Changed `approval_step` to have `is_skipped` attribute
+
+Added
+=========
+- Added `warehouse_type` to group the warehouses
